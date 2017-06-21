@@ -1,25 +1,13 @@
-#!/usr/local/bin/perl58
 ##############################################################################
 # PACKAGE NAME:	Translate.pm
 # DESCRIPTION:	AA translation from nucleotide sequence
-# PARAMETERS:	none
-# OUTPUT:	
-# TABLES:       
 #
 # DATE WRITTEN: 2007-01-12
 # WRITTEN BY:   Martin J. Maiers
-#
-# REVISION HISTORY: 
-# REVISION DATE		REVISED BY	DESCRIPTION 
-# ------- ----------	--------------	-------------------------------------
-#
-#       COPYRIGHT (C) 1994, 1995, 1997 NATIONAL MARROW DONOR PROGRAM.  
-#                           ALL RIGHTS RESERVED        
 ##############################################################################
 package Translate;
 use strict;    # always
 use warnings;  # or else
-
 
 my $init=0;
 my %tran;

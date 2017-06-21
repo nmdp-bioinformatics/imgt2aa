@@ -1,3 +1,6 @@
+# 
+# adapted from http://www.biology.wustl.edu/gcg/appendix_iii.html
+#
 A:Ala:Alanine:GCT,GCC,GCA,GCG:!GCX
 C:Cys:Cysteine:TGT,TGC:!TGY
 D:Asp:Aspartic:GAT,GAC:!GAY

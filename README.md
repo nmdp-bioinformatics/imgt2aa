@@ -7,8 +7,7 @@ extract aligned amino acid sequences from IMGT/HLA
 Need to first pull the hla.xml file
 
 ```
-$ curl ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/xml/hla.xml.zip >hla.xml
-.zip
+$ curl ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/xml/hla.xml.zip >hla.xml.zip
 $ unzip hla.xml.zip
 ```
 

@@ -5,13 +5,6 @@
 #
 # DATE WRITTEN: 2017-06-20
 # WRITTEN BY:   Martin Maiers
-#
-# REVISION HISTORY: 
-# REVISION DATE		REVISED BY	DESCRIPTION 
-# ------- ----------	--------------	-------------------------------------
-#
-#       COPYRIGHT (C) 2017 NATIONAL MARROW DONOR PROGRAM.  
-#               ALL RIGHTS RESERVED        
 ##############################################################################
 use strict;    # always
 use warnings;  # or else
@@ -26,7 +19,6 @@ my $verbose =1;
 # $ unzip hla.xml.zip
 #
 my $file = `cat hla.xml`;
-$file = `cat hla.xml.small`; # for testing
 
 print STDERR "parsing..." if $verbose;
 my $alleles = XMLin($file);

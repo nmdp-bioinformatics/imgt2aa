@@ -13,18 +13,29 @@ $ unzip hla.xml.zip
 
 # Run
 
-perl imgt2aa.pl >DPB1.db
+```
+$ perl imgt2aa.pl >DPB1.db
+```
+
+The output file is tab-delimited with:
+* locus
+* allele (first 2 fields)
+* amino acid sequence presented such that the position in the string corresponds to the position in the mature protein
+
 
 
 # How it works
 
-The hla.xml file contains nucleotide sequences and cDNA coordinates for HLA alleles.  The nucleotides for Exon2 are extracted and parsed.  Then the cDNA coordinates are used to offset the AA sequence such that the first postion in the string (possibly "*") corresponds to AA 1 in the mature protine
+The hla.xml file contains nucleotide sequences and cDNA coordinates for HLA alleles.  The nucleotides for Exon2 are extracted and parsed.  Then the cDNA coordinates are used to offset the AA sequence such that the first postion in the string (possibly "*") corresponds to AA 1 in the mature protein.
 
 
 # TODO
 
 * Complete implemtnation for all loci. Only implemented for DPB1
 * Incoporate other exons.  Only implemented for exon 2
+* Address reading frame on the 3' end ("-")
+* generalize to work with GFE defined alleles (a superset of IMGT/HLA)
+* Get it to work with KIR and other loci
 
 
 

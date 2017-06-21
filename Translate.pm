@@ -20,6 +20,7 @@ sub initialize {
   open(PROTEIN, $prot) or die "can't open $prot for reading";
   while(<PROTEIN>) {
     chomp;
+    next if /^#/; #comments
     my ($aa,$aa_3,$aa_name,$na_list) = split /:/;
     my(@na) = split (/,/, $na_list);
     foreach my $n (@na) {

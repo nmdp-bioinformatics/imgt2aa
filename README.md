@@ -2,12 +2,12 @@
 extract aligned amino acid sequences from IMGT/HLA
 
 
-# Prerequsites
+# Prerequisites
 
 Need to first pull the hla.xml file
 
 ```
-$ curl ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/xml/hla.xml.zip >hla.xml.zip
+$ curl ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/xml/hla.xml.zip -o hla.xml.zip
 $ unzip hla.xml.zip
 ```
 
@@ -26,13 +26,13 @@ The output file is tab-delimited with:
 
 # How it works
 
-The hla.xml file contains nucleotide sequences and cDNA coordinates for HLA alleles.  The nucleotides for Exon2 are extracted and parsed.  Then the cDNA coordinates are used to offset the AA sequence such that the first postion in the string (possibly "*") corresponds to AA 1 in the mature protein.
+The *hla.xml* file contains nucleotide sequences and cDNA coordinates for HLA alleles.  The nucleotides for Exon2 are extracted and parsed.  Then the cDNA coordinates are used to offset the AA sequence such that the first position in the string (possibly "\*") corresponds to AA 1 in the mature protein.
 
 
 # TODO
 
-* Complete implemtnation for all loci. Only implemented for DPB1
-* Incoporate other exons.  Only implemented for exon 2
+* Complete implementation for all loci. Only implemented for DPB1
+* Incorporate other exons.  Only implemented for exon 2
 * Address reading frame on the 3' end ("-")
 * generalize to work with GFE defined alleles (a superset of IMGT/HLA)
 * Get it to work with KIR and other loci

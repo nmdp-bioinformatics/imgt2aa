@@ -9,6 +9,7 @@
 use strict;    # always
 use warnings;  # or else
 use XML::Simple;
+use lib ".";
 use Translate;  # every Bioinformatician has written one
 
 my $verbose =1;
@@ -54,17 +55,22 @@ foreach my $allele (keys %{$alleles->{"allele"}}) {
 # 
 my %PM;
 $PM{"HLA-DPB1"} = 84;
+$PM{"HLA-DQB1"} = 84;
+$PM{"HLA-DRB1"} = 84;
 
 # output hash
 my %O; 
 
 foreach my $allele (sort keys %GF) {
-  # HLA-DPB1
   my $loc = (split /\*/, $allele)[0];
-  next unless $loc=~/HLA-DPB1/;
+  next unless defined $PM{$loc};
 
   foreach my $feature (sort keys %{$GF{$allele}}) {
-    next unless $feature=~/Exon 2/;
+    if ($loc=~/HLA-D/) {
+      next unless $feature=~/Exon 2/;
+    } else {
+      next unless $feature=~/Exon [23]/;
+    }
     my $rf = $GF{$allele}{$feature}{rf};
     my $nuc = $GF{$allele}{$feature}{nuc};
     my $aaseq = TranslateRF($nuc, $rf);
@@ -79,6 +85,7 @@ foreach my $allele (sort keys %GF) {
     # then add rf this is the postion of the first codon, in frame
     # subtract 1 to get the offset (number of unspecified AA)
     my $offset = int ((($cdna_start+$rf)-$pos1_mature)/3)-1;
+    print STDERR "$loc offset $offset\n";
 
     # fill in with this many asterisks
     my $prefix = "*" x $offset;
@@ -89,17 +96,20 @@ foreach my $allele (sort keys %GF) {
     my $allele2 = getallele2($allele);
 
     # store the result
-    $O{$allele2} = $aaseq;
+    $O{$loc}{$allele2} = $aaseq;
   }
 }
 
 #
 # print out
 #
-foreach my $allele (sort keys %O) {
-  my ($loc, $a) = split /\*/, $allele;
-  my $shortloc = (split /\-/, $loc)[1];
-  print join ('	', $shortloc, $a, $O{$allele}), "\n";
+foreach my $loc (sort keys %O) {
+  open LOCDB, ">$loc.db" or die "$!: $loc.db";
+  foreach my $allele (sort keys %{$O{$loc}}) {
+    my ($loc, $a) = split /\*/, $allele;
+    my $shortloc = (split /\-/, $loc)[1];
+    print LOCDB join ('	', $shortloc, $a, $O{$loc}{$allele}), "\n";
+  }
 }
 
 exit 0;

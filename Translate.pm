@@ -39,7 +39,7 @@ sub translate {
     if (defined $tran{$codon}) {
       $ret.=$tran{$codon};
     } else {
-      $ret.="-";
+      $ret.="*";
     }
   }
   return $ret;

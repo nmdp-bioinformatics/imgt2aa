@@ -14,10 +14,21 @@ $ unzip hla.xml.zip
 # Run
 
 ```
-$ perl imgt2aa.pl >DPB1.db
+$ perl imgt2aa.pl 
 ```
 
-The output file is tab-delimited with:
+
+Generates output files:
+```
+HLA-A.db
+HLA-b.db
+HLA-C.db
+HLA-DRB1.db
+HLA-DQB1.db
+HLA-DPB1.db
+```
+
+Each output file is tab-delimited with:
 * locus
 * allele (first 2 fields)
 * amino acid sequence presented such that the position in the string corresponds to the position in the mature protein
@@ -31,10 +42,11 @@ The *hla.xml* file contains nucleotide sequences and cDNA coordinates for HLA al
 
 # TODO
 
-* Complete implementation for all loci. Only implemented for DPB1
-* Incorporate other exons.  Only implemented for exon 2
+* Complete implementation for all loci. Only implemented for A, B, C, DRB1, DQB, DPB1
+* Incorporate other exons.  Only implemented for ARS exons
 * Address reading frame on the 3' end ("-")
 * generalize to work with GFE defined alleles (a superset of IMGT/HLA)
+* move to .DAT file which has BioPython support
 * Get it to work with KIR and other loci
 
 

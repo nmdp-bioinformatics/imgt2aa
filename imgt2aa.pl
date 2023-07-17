@@ -55,8 +55,11 @@ foreach my $allele (keys %{$alleles->{"allele"}}) {
 # 
 my %PM;
 $PM{"HLA-DPB1"} = 84;
-$PM{"HLA-DQB1"} = 84;
+$PM{"HLA-DQB1"} = 93;
 $PM{"HLA-DRB1"} = 84;
+$PM{"HLA-A"} = 69;
+$PM{"HLA-B"} = 69;
+$PM{"HLA-C"} = 69;
 
 # output hash
 my %O; 
@@ -65,39 +68,59 @@ foreach my $allele (sort keys %GF) {
   my $loc = (split /\*/, $allele)[0];
   next unless defined $PM{$loc};
 
+  my $nuc = "";
   foreach my $feature (sort keys %{$GF{$allele}}) {
     if ($loc=~/HLA-D/) {
       next unless $feature=~/Exon 2/;
     } else {
       next unless $feature=~/Exon [23]/;
     }
-    my $rf = $GF{$allele}{$feature}{rf};
-    my $nuc = $GF{$allele}{$feature}{nuc};
-    my $aaseq = TranslateRF($nuc, $rf);
-    #
-    # figure out how much to left pad with asterisks based on cdna_start
-    #
-    my $cdna_start = $GF{$allele}{$feature}{cdna_start};
-    my $pos1_mature= $PM{$loc};
-
-    # this line is tricky
-    # from cDNA start, substract the cDNA position of the codon 1 
-    # then add rf this is the postion of the first codon, in frame
-    # subtract 1 to get the offset (number of unspecified AA)
-    my $offset = int ((($cdna_start+$rf)-$pos1_mature)/3)-1;
-    print STDERR "$loc offset $offset\n";
-
-    # fill in with this many asterisks
-    my $prefix = "*" x $offset;
-    # and prefix
-    $aaseq = $prefix . $aaseq;
-
-    # get the short name: DPB1*02:01 (from DPB1*02:01:01:01)
-    my $allele2 = getallele2($allele);
-
-    # store the result
-    $O{$loc}{$allele2} = $aaseq;
+    $nuc .= $GF{$allele}{$feature}{nuc};
   }
+  my $rf = $GF{$allele}{"Exon 2"}{rf};
+
+  my $exon1 = defined $GF{$allele}{"Exon 1"}{nuc} ?  $GF{$allele}{"Exon 1"}{nuc} : "*";
+  my $exon4 = defined $GF{$allele}{"Exon 4"}{nuc} ?  $GF{$allele}{"Exon 4"}{nuc} : "**";
+
+  # readingframe = "3" means this G|AG
+
+  my $aaseq;
+  if ($loc=~/HLA-[ABC]/) {
+    $nuc= substr($exon1, -1, 1) . $nuc . substr($exon4, 0, 2);
+    $aaseq = TranslateRF($nuc, 1);
+  } else {
+    $aaseq = TranslateRF($nuc, $rf);
+  }
+
+
+  #
+  # figure out how much to left pad with asterisks based on cdna_start
+  #
+  my $cdna_start = $GF{$allele}{"Exon 2"}{cdna_start};
+  my $pos1_mature= $PM{$loc};
+
+  # this line is tricky
+  # from cDNA start, substract the cDNA position of the codon 1 
+  # then add rf this is the postion of the first codon, in frame
+  # subtract 1 to get the offset (number of unspecified AA)
+  my $offset = int ((($cdna_start+$rf)-$pos1_mature)/3)-1;
+
+  if ($loc=~/HLA-[ABC]/) {
+    $offset = int ((($cdna_start)-$pos1_mature)/3)-1;
+  }
+  print STDERR "$loc offset $offset\n";
+
+  # fill in with this many asterisks
+  my $prefix = "*" x $offset;
+
+  $aaseq = $prefix . $aaseq;
+
+  # get the short name: DPB1*02:01 (from DPB1*02:01:01:01)
+  my $allele2 = getallele2($allele);
+
+
+  # store the result
+  $O{$loc}{$allele2} = $aaseq;
 }
 
 #

@@ -1,0 +1,141 @@
+#!/usr/local/bin/perl
+##############################################################################
+# SCRIPT NAME:	mkkir
+# DESCRIPTION:	make the kir epitope files
+# PARAMETERS:	none
+# OUTPUT:	
+# TABLES:       
+#
+# DATE WRITTEN: 2012-07-24
+# WRITTEN BY:   Martin J. Maiers
+#
+# REVISION HISTORY: 
+# REVISION DATE		REVISED BY	DESCRIPTION 
+# ------- ----------	--------------	-------------------------------------
+#
+#       COPYRIGHT (C) 2011 NATIONAL MARROW DONOR PROGRAM.  
+#               ALL RIGHTS RESERVED        
+##############################################################################
+use strict;    # always
+use warnings;  # or else
+
+
+my $asap = "A.sap";
+my $bsap = "B.sap";
+my $csap = "C.sap";
+
+my $aw = "Aw.txt";
+my $bw = "Bw.txt";
+my $cw = "Cw.txt";
+
+
+
+#
+# C
+#
+open CSAP, $csap or die "$!: $csap";
+open CW, ">$cw" or die "$!: $cw";
+
+while(<CSAP>) {
+  chomp;
+  my ($loc, $allele, $sapstring) = split /	/;
+  $loc = "C";  #nomenclature v3
+  my $locallele = join '*', $loc, $allele;
+  my ($saps, $epitope) = getEpitope($locallele, $sapstring);
+  print CW join ('	', $locallele, $saps, $epitope), "\n";
+}
+
+#
+# B
+#
+open BSAP, $bsap or die "$!: $bsap";
+open BW, ">$bw" or die "$!: $bw";
+
+while(<BSAP>) {
+  chomp;
+  my ($loc, $allele, $sapstring) = split /	/;
+  $loc = "B";  #nomenclature v3
+  my $locallele = join '*', $loc, $allele;
+  my ($saps, $epitope) = getEpitope($locallele, $sapstring);
+  print BW join ('	', $locallele, $saps, $epitope), "\n";
+}
+
+#
+# A
+#
+open ASAP, $asap or die "$!: $asap";
+open AW, ">$aw" or die "$!: $aw";
+
+while(<ASAP>) {
+  chomp;
+  my ($loc, $allele, $sapstring) = split /	/;
+  $loc = "A";  #nomenclature v3
+  my $locallele = join '*', $loc, $allele;
+  my ($saps, $epitope) = getEpitope($locallele, $sapstring);
+  print AW join ('	', $locallele, $saps, $epitope), "\n";
+}
+
+exit 0;
+
+sub getEpitope {
+  my ($locallele, $sapstring) = @_;
+  my ($loc, $allele) = split /\*/, $locallele;
+
+  # Abi-Rached/Parham (2012) PLoS Genetics doi:10.1371/journal.pgen.1001192
+  # "Lineage III KIR recognize the C1 and C2 epitopes of MHC
+  # class I. C2 depends upon valine 76 (V76) and lysine 80 (K80), a
+  # motif restricted to a subset of MHC-C allotypes. C1 depends upon
+  # V76 and asparagine 80 (N80), a motif present in subsets of MHCC
+  # and -B allotypes"
+
+  # Parham (2013) Nature Reviews Immunology  Bw4 has Argenine 83
+  # Lineage II KIRs recognize the HLA-A epitope A3/11 and the Bw4 epitope
+  # of HLA-A and HLA-B
+
+  # parse
+  my %S;
+  foreach (split / /, $sapstring) {
+    /(\D)(\d+)/;
+    my $aa = $1;
+    my $pos = $2;
+    $S{$pos} = $aa;
+  }
+
+  my $epitope = "X";
+
+  if ($loc eq "C") {
+
+    $epitope = "C1" if $S{80} eq "N" && $S{76} eq "V";
+
+    $epitope = "C2" if $S{80} eq "K" && $S{76} eq "V" ;
+
+    my $saps = join ' ', $S{77}."77", $S{80}."80";
+    return ($saps, $epitope);
+  } elsif ($loc eq "B") {
+    # Parham (2013) Nature Reviews Immunology  Bw4 has Argenine 83
+    $epitope = "Bw4" if $S{83} eq "R";
+
+    # Parham (2013) Nature Reviews Immunology  Bw6 is not a KIR epitope
+    #$epitope = "Bw6" if $S{83} eq "G";
+ 
+    # some HLA-B have a C1 epitope
+    # http://www.ncbi.nlm.nih.gov/pmc/articles/PMC2973822/
+    $epitope = "C1" if $S{80} eq "N" && $S{76} eq "V";
+
+    my $saps = join ' ', $S{76}."76", $S{77}."77", $S{80}."80", $S{81}."81",$S{82}."82",$S{83}."83";
+    return ($saps, $epitope);
+  } elsif ($loc eq "A") {
+
+    $epitope = "A311" if $allele=~/^03:/;
+    $epitope = "A311" if $allele=~/^11:/;
+    $epitope = "Bw4" if $S{83} eq "R";
+    my $saps = join ' ', $S{76}."76", $S{77}."77", $S{80}."80", $S{81}."81",$S{82}."82",$S{83}."83";
+    return ($saps, $epitope);
+  } else {
+    warn "invalid locus: $loc";
+  }
+  
+
+
+
+}

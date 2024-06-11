@@ -16,7 +16,7 @@ use warnings;
 
 foreach my $file (`/bin/ls -1 *.db`) {
   chomp $file;
-  if($file=~/(\w+).db/) {
+  if($file=~/(HLA-\w+).db/) {
     my $locus = $1;
     mksap($locus);
   }
@@ -56,33 +56,33 @@ sub mksap {
   #
   my @pos;
   my ($offset, $s_codon, $e_codon);
-  if($locus =~/^A/i || $locus =~/^B/i || $locus=~/^C/i) {
+  if($locus =~/^HLA-A/i || $locus =~/^HLA-B/i || $locus=~/^HLA-C/i) {
     print STDERR "class 1 style\n";
     $offset  =  1; # -23  # 1
     $s_codon =  1;  # 24   # 1
     $e_codon =  183; # 180  # 183
-  } elsif ($locus =~/^DRB[1345]/i) {
+  } elsif ($locus =~/^HLA-DRB[1345]/i) {
     print STDERR "class 2 style\n";
     $offset  = 1; #-28;  # because the leader is 29 position -28 to 0
     $s_codon = 1;  #9;
     $e_codon =  95;
-  } elsif ($locus =~/^DQB1/i) {
+  } elsif ($locus =~/^HLA-DQB1/i) {
     print STDERR "class 2 style\n";
     $offset  = 5;   # 5
     $s_codon = 1;   # 1
     $e_codon = 95;  # 95
-  } elsif ($locus =~/^DQA1/i) {
+  } elsif ($locus =~/^HLA-DQA1/i) {
     print STDERR "class 2 style\n";
     $offset  = 1;   # 1
     $s_codon = 1;   # 1
     $e_codon = 88; #  88
-  } elsif ($locus =~/^DPB1/i) {
+  } elsif ($locus =~/^HLA-DPB1/i) {
     # imgt/HLA nucleotide CDS in blocks
     print STDERR "class 2 style\n";
     $offset  = 1;   # 1
     $s_codon = 1;   # 1
     $e_codon = 93;  # 93
-  } elsif ($locus =~/^DPA1/i) {
+  } elsif ($locus =~/^HLA-DPA1/i) {
     # imgt/HLA nucleotide CDS in blocks
     print STDERR "class 2 style\n";
     $offset  = 1;   # 1
@@ -95,6 +95,7 @@ sub mksap {
     my %CTaa;
     foreach my $allele (keys %Seq) {
       my $seq = $Seq{$allele};
+      next if $i > length($seq);
       my $aa = substr($seq, $i, 1);
       next if $aa eq "*";
       next if $aa eq "X";
@@ -110,6 +111,7 @@ sub mksap {
   my %sap;
   foreach my $allele (keys %Seq) {
     foreach my $aapos (@pos) {
+      next if ($aapos - $offset) > length($Seq{$allele});
       my $s = substr($Seq{$allele}, $aapos - $offset,1).$aapos;
       push @{$sap{$allele}}, $s;
     }
@@ -120,44 +122,7 @@ sub mksap {
     print SAPFILE join ('	', $locus, $_, join (' ', @{$sap{$_}})), "\n";
   }
   close SAPFILE;
-
-
-  #
-  # build sap database
-  #
-  open SAPDDL, ">$locus.ddl" or die "$0: $! $locus.ddl\n";
-  my $loc = lc $locus;
-  print SAPDDL qq/use antibody;
-/;
-  print SAPDDL qq/drop table t_sap_$loc;
-/;
-  print SAPDDL qq/create table t_sap_$loc (
-  allele char(8)
-/;
-  foreach my $aapos (@pos) {
-    print SAPDDL " ,sap_$aapos char(1)\n";
-  }
-  print SAPDDL " ,index (allele));\n";
-  print SAPDDL "\n\n";
-
-  my $sql = "insert into t_sap_$loc (allele\n";
-  foreach my $aapos (@pos) {
-    $sql.=" ,sap_$aapos\n";
-  }
-  $sql.=")\nvalues\n(";
-  
-  foreach my $allele (sort keys %sap) {
-    my $allele_sql = $sql;
-    $allele_sql.= qq/"$allele"/;
-    foreach my $s (@{$sap{$allele}}) {
-      my $aa  = substr($s, 0, 1);
-      $allele_sql.= qq/,"$aa"/; 
-    }
-    $allele_sql.=qq/);/;
-    print SAPDDL "$allele_sql\n";
-  }
 }
-
 
 sub getAA {
   my $allele = shift;

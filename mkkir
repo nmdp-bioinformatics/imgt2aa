@@ -20,9 +20,9 @@ use strict;    # always
 use warnings;  # or else
 
 
-my $asap = "A.sap";
-my $bsap = "B.sap";
-my $csap = "C.sap";
+my $asap = "HLA-A.sap";
+my $bsap = "HLA-B.sap";
+my $csap = "HLA-C.sap";
 
 my $aw = "Aw.txt";
 my $bw = "Bw.txt";
@@ -39,7 +39,6 @@ open CW, ">$cw" or die "$!: $cw";
 while(<CSAP>) {
   chomp;
   my ($loc, $allele, $sapstring) = split /	/;
-  $loc = "C";  #nomenclature v3
   my $locallele = join '*', $loc, $allele;
   my ($saps, $epitope) = getEpitope($locallele, $sapstring);
   print CW join ('	', $locallele, $saps, $epitope), "\n";
@@ -54,7 +53,6 @@ open BW, ">$bw" or die "$!: $bw";
 while(<BSAP>) {
   chomp;
   my ($loc, $allele, $sapstring) = split /	/;
-  $loc = "B";  #nomenclature v3
   my $locallele = join '*', $loc, $allele;
   my ($saps, $epitope) = getEpitope($locallele, $sapstring);
   print BW join ('	', $locallele, $saps, $epitope), "\n";
@@ -69,7 +67,6 @@ open AW, ">$aw" or die "$!: $aw";
 while(<ASAP>) {
   chomp;
   my ($loc, $allele, $sapstring) = split /	/;
-  $loc = "A";  #nomenclature v3
   my $locallele = join '*', $loc, $allele;
   my ($saps, $epitope) = getEpitope($locallele, $sapstring);
   print AW join ('	', $locallele, $saps, $epitope), "\n";
@@ -103,7 +100,7 @@ sub getEpitope {
 
   my $epitope = "X";
 
-  if ($loc eq "C") {
+  if ($loc eq "HLA-C") {
 
     $epitope = "C1" if $S{80} eq "N" && $S{76} eq "V";
 
@@ -111,7 +108,7 @@ sub getEpitope {
 
     my $saps = join ' ', $S{77}."77", $S{80}."80";
     return ($saps, $epitope);
-  } elsif ($loc eq "B") {
+  } elsif ($loc eq "HLA-B") {
     # Parham (2013) Nature Reviews Immunology  Bw4 has Argenine 83
     $epitope = "Bw4" if $S{83} eq "R";
 
@@ -124,7 +121,7 @@ sub getEpitope {
 
     my $saps = join ' ', $S{76}."76", $S{77}."77", $S{80}."80", $S{81}."81",$S{82}."82",$S{83}."83";
     return ($saps, $epitope);
-  } elsif ($loc eq "A") {
+  } elsif ($loc eq "HLA-A") {
 
     $epitope = "A311" if $allele=~/^03:/;
     $epitope = "A311" if $allele=~/^11:/;

@@ -26,7 +26,7 @@ my %options;
 getopts("v:", \%options);
 $hladb = $options{v} if defined $options{v} && $options{v};
 
-`cd "$datadir/$hladb"; perl ../../mksapTranslate ; perl ../../mkkir ; perl ../../mksnp`;
+`cd "$datadir/$hladb"; perl ../../mksapTranslate ; perl ../../mkkir`;
 
 exit 0;
 

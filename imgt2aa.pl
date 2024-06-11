@@ -15,6 +15,7 @@ use Translate;  # every Bioinformatician has written one
 my $verbose =1;
 my $hladb="3.56.0";
 my $datadir="./data/$hladb";
+`mkdir -p $datadir`;
 
 # 
 # download latest hla.xml 
@@ -133,7 +134,7 @@ foreach my $loc (sort keys %O) {
   foreach my $allele (sort keys %{$O{$loc}}) {
     my ($loc, $a) = split /\*/, $allele;
     my $shortloc = (split /\-/, $loc)[1];
-    print LOCDB join ('	', $shortloc, $a, $O{$loc}{$allele}), "\n";
+    print LOCDB join ('	', $loc, $a, $O{$loc}{$allele}), "\n";
   }
 }
 

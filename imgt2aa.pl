@@ -11,9 +11,13 @@ use warnings;  # or else
 use XML::Simple;
 use lib ".";
 use Translate;  # every Bioinformatician has written one
+use Getopt::Std;
 
 my $verbose =1;
 my $hladb="3.56.0";
+my %options;
+getopts("v:", \%options);
+$hladb = $options{v} if defined $options{v} && $options{v};
 my $datadir="./data/$hladb";
 `mkdir -p $datadir`;
 

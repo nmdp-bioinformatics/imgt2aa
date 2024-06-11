@@ -13,19 +13,22 @@ $ unzip hla.xml.zip
 
 # Run
 
+Note the database version (e.g. 3.56.0).
+
 ```
-$ perl imgt2aa.pl 
+$ perl imgt2aa.pl  -v 3.56.0
 ```
 
 
 Generates output files:
 ```
-HLA-A.db
-HLA-b.db
-HLA-C.db
-HLA-DRB1.db
-HLA-DQB1.db
-HLA-DPB1.db
+data/
+    HLA-A.db
+    HLA-B.db
+    HLA-C.db
+    HLA-DRB1.db
+    HLA-DQB1.db
+    HLA-DPB1.db
 ```
 
 Each output file is tab-delimited with:
@@ -34,6 +37,13 @@ Each output file is tab-delimited with:
 * amino acid sequence presented such that the position in the string corresponds to the position in the mature protein
 
 
+# Quarterly
+
+Run this to create the .sap and KIR files.
+
+```
+./quarterly.pl -v 3.56.0
+```
 
 # How it works
 

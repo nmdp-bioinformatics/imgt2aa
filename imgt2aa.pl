@@ -11,8 +11,15 @@ use warnings;  # or else
 use XML::Simple;
 use lib ".";
 use Translate;  # every Bioinformatician has written one
+use Getopt::Std;
 
 my $verbose =1;
+my $hladb="3.56.0";
+my %options;
+getopts("v:", \%options);
+$hladb = $options{v} if defined $options{v} && $options{v};
+my $datadir="./data/$hladb";
+`mkdir -p $datadir`;
 
 # 
 # download latest hla.xml 
@@ -127,11 +134,11 @@ foreach my $allele (sort keys %GF) {
 # print out
 #
 foreach my $loc (sort keys %O) {
-  open LOCDB, ">$loc.db" or die "$!: $loc.db";
+  open LOCDB, ">$datadir/$loc.db" or die "$!: $loc.db";
   foreach my $allele (sort keys %{$O{$loc}}) {
     my ($loc, $a) = split /\*/, $allele;
     my $shortloc = (split /\-/, $loc)[1];
-    print LOCDB join ('	', $shortloc, $a, $O{$loc}{$allele}), "\n";
+    print LOCDB join ('	', $loc, $a, $O{$loc}{$allele}), "\n";
   }
 }
 

@@ -1,0 +1,131 @@
+#!/usr/local/bin/perl
+############################################################################
+# SCRIPT NAME:  mksapTranslate
+# DESCRIPTION:  read in aligned HLADB files; output sap files 
+#
+# DATE WRITTEN: April 28, 2002
+# WRITTEN BY:   Martin Maiers
+#
+# REVISION HISTORY:
+# REVISION DATE         REVISED BY      DESCRIPTION
+# ------- ----------    --------------  -------------------------------------
+#
+##############################################################################
+use strict;
+use warnings;
+
+foreach my $file (`/bin/ls -1 *.db`) {
+  chomp $file;
+  if($file=~/(HLA-\w+).db/) {
+    my $locus = $1;
+    mksap($locus);
+  }
+}
+exit 0;
+
+
+sub mksap {
+  my $locus = shift;
+  my $dbfile = "$locus.db";
+  my $sapfile = "$locus.sap";
+
+  print "creating $sapfile from $dbfile\n";
+
+  my %Seq;
+  open PEP, $dbfile or die "$0: $dbfile: $!\n";
+  my $maxlength = 0;
+  while(<PEP>) {
+    chomp;
+    my($loc, $allele, $seq) = split /	/; # tab
+    $loc = "C" if $loc eq "Cw";
+    next unless $locus =~/^$loc/i;
+    next if $allele =~/N/;              # skip nulls
+
+    #$allele =substr($allele, 0, 4);     # ignore slient mutations
+    my $newallele = getAA($allele);
+     
+    #print STDERR "$allele becomes $newallele\n";
+    $allele = $newallele;
+    my $len = length($seq);
+    $maxlength = $len if $maxlength < $len;
+    $Seq{$allele} = $seq;
+  }   
+
+  #
+  # count amino acids that vary
+  #
+  my @pos;
+  my ($offset, $s_codon, $e_codon);
+  if($locus =~/^HLA-A/i || $locus =~/^HLA-B/i || $locus=~/^HLA-C/i) {
+    print STDERR "class 1 style\n";
+    $offset  =  1; # -23  # 1
+    $s_codon =  1;  # 24   # 1
+    $e_codon =  183; # 180  # 183
+  } elsif ($locus =~/^HLA-DRB[1345]/i) {
+    print STDERR "class 2 style\n";
+    $offset  = 1; #-28;  # because the leader is 29 position -28 to 0
+    $s_codon = 1;  #9;
+    $e_codon =  95;
+  } elsif ($locus =~/^HLA-DQB1/i) {
+    print STDERR "class 2 style\n";
+    $offset  = 5;   # 5
+    $s_codon = 1;   # 1
+    $e_codon = 95;  # 95
+  } elsif ($locus =~/^HLA-DQA1/i) {
+    print STDERR "class 2 style\n";
+    $offset  = 1;   # 1
+    $s_codon = 1;   # 1
+    $e_codon = 88; #  88
+  } elsif ($locus =~/^HLA-DPB1/i) {
+    # imgt/HLA nucleotide CDS in blocks
+    print STDERR "class 2 style\n";
+    $offset  = 1;   # 1
+    $s_codon = 1;   # 1
+    $e_codon = 93;  # 93
+  } elsif ($locus =~/^HLA-DPA1/i) {
+    # imgt/HLA nucleotide CDS in blocks
+    print STDERR "class 2 style\n";
+    $offset  = 1;   # 1
+    $s_codon = 1;   # 1
+    $e_codon = 85;  # 85 
+  } else {
+    die "unable to process locus: $locus\n";
+  }
+  for(my $i=0; $i<$maxlength; $i++) {
+    my %CTaa;
+    foreach my $allele (keys %Seq) {
+      my $seq = $Seq{$allele};
+      next if $i > length($seq);
+      my $aa = substr($seq, $i, 1);
+      next if $aa eq "*";
+      next if $aa eq "X";
+      $CTaa{$aa}++;
+    }
+    my $codon = $i + $offset;
+    next unless $codon >=$s_codon;
+    next unless $codon <=$e_codon;
+    next unless scalar(keys %CTaa)>1;  # uncomment this line to have all positions be treated as polymorphic
+    push @pos, $codon;
+  }
+  
+  my %sap;
+  foreach my $allele (keys %Seq) {
+    foreach my $aapos (@pos) {
+      next if ($aapos - $offset) > length($Seq{$allele});
+      my $s = substr($Seq{$allele}, $aapos - $offset,1).$aapos;
+      push @{$sap{$allele}}, $s;
+    }
+  }
+
+  open SAPFILE, ">$locus.sap" or die "$0: $! $locus.sap\n";
+  foreach (sort keys %sap) {
+    print SAPFILE join ('	', $locus, $_, join (' ', @{$sap{$_}})), "\n";
+  }
+  close SAPFILE;
+}
+
+sub getAA {
+  my $allele = shift;
+  my (@blocks) = split /:/, $allele;
+  return join (':', $blocks[0], $blocks[1]);
+}

@@ -1,0 +1,21 @@
+#!/usr/bin/env perl
+############################################################################
+# SCRIPT NAME:	stub
+# DESCRIPTION:	test SAP.pm
+#
+# DATE WRITTEN: 2024-06-10
+# WRITTEN BY:   Martin Maiers
+#
+############################################################################
+use strict;    # always
+use warnings;  # or else
+use lib '.';
+use SAP;
+SAP::loadSAP();
+
+
+print join (',', SAP::seqDiff("HLA-A", "24:02", "25:01"));
+print "\n";
+
+exit 0;
+

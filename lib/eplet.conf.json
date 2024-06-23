@@ -1,0 +1,7 @@
+# config-file-type: JSON 1
+
+{
+   "epregistry" : "/Users/mmaiers/src/git/epregistry/data",
+   "rando" : 10
+}
+

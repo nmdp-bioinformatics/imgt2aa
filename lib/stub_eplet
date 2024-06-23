@@ -1,0 +1,33 @@
+#!/usr/bin/env perl
+############################################################################
+# SCRIPT NAME:	stub_eplet
+# DESCRIPTION:	
+#
+# DATE WRITTEN: 2024-06-18
+# WRITTEN BY:   Martin Maiers
+#
+############################################################################
+use strict;    # always
+use warnings;  # or else
+use lib ".";
+use EPLET;
+
+my $config = "./eplet.conf.json";
+print STDERR "start init\n";
+EPLET::initialize($config);
+print STDERR "end init\n";
+my $donor = "A*02:01";
+my $recip = "A*32:01";
+
+my @donor_eplets = EPLET::get($donor);
+my @recip_eplets = EPLET::get($recip);
+
+my @mismatches = EPLET::mismatches(\@donor_eplets, \@recip_eplets);
+
+print "donor HLA ($donor) eplets: ", join(',', @donor_eplets),"\n";
+print "recip HLA ($recip) eplets: ", join(',', @recip_eplets),"\n";
+print "N mismatches: ", scalar (@mismatches), "\n";
+print "mismatches: ", join(',', @mismatches),"\n";
+
+exit 0;
+

@@ -16,11 +16,12 @@ use Getopt::Std;
 my $verbose =1;
 my $hladb="3.56.0";
 my %options;
-getopts("v:", \%options);
+getopts("ev:", \%options);
 $hladb = $options{v} if defined $options{v} && $options{v};
 my $datadir="./data/$hladb";
 `mkdir -p $datadir`;
 
+my $exon3 = $options{e};
 # 
 # download latest hla.xml 
 # $ curl ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/xml/hla.xml.zip >hla.xml.zip
@@ -78,54 +79,77 @@ foreach my $allele (sort keys %GF) {
   my $nuc = "";
   foreach my $feature (sort keys %{$GF{$allele}}) {
     if ($loc=~/HLA-D/) {
-      next unless $feature=~/Exon 2/;
+      if ($exon3) {
+        next unless $feature=~/Exon [1234]/;
+      } else {
+        next unless $feature=~/Exon [2]/;
+      }
     } else {
-      next unless $feature=~/Exon [23]/;
+      if ($exon3) {
+        next unless $feature=~/Exon [234]/;
+      } else {
+        next unless $feature=~/Exon [23]/;
+      }
     }
-    $nuc .= $GF{$allele}{$feature}{nuc};
+    if ($feature eq "Exon 1" && $exon3) {
+      if ($loc=~/HLA-D[RQ]B[1345]/) {  
+        $nuc .= substr($GF{$allele}{$feature}{nuc}, -13);
+      }
+    } else {
+      $nuc .= $GF{$allele}{$feature}{nuc};
+    }
   }
-  my $rf = $GF{$allele}{"Exon 2"}{rf};
 
-  my $exon1 = defined $GF{$allele}{"Exon 1"}{nuc} ?  $GF{$allele}{"Exon 1"}{nuc} : "*";
-  my $exon4 = defined $GF{$allele}{"Exon 4"}{nuc} ?  $GF{$allele}{"Exon 4"}{nuc} : "**";
+  my $rf = $GF{$allele}{"Exon 2"}{rf};
 
   # readingframe = "3" means this G|AG
 
   my $aaseq;
   if ($loc=~/HLA-[ABC]/) {
+    my $exon1 = defined $GF{$allele}{"Exon 1"}{nuc} ?  $GF{$allele}{"Exon 1"}{nuc} : "*";
+    my $exon4 = defined $GF{$allele}{"Exon 4"}{nuc} ?  $GF{$allele}{"Exon 4"}{nuc} : "**";
     $nuc= substr($exon1, -1, 1) . $nuc . substr($exon4, 0, 2);
     $aaseq = TranslateRF($nuc, 1);
   } else {
-    $aaseq = TranslateRF($nuc, $rf);
+    # class II
+    if ($exon3) {
+      if (defined $GF{$allele}{"Exon 1"}{nuc}) {
+        $aaseq = TranslateRF($nuc, 1);
+      } else {
+        $aaseq = TranslateRF($nuc, $rf);
+      }
+    } else {
+      $aaseq = TranslateRF($nuc, $rf);
+    }
   }
 
 
-  #
-  # figure out how much to left pad with asterisks based on cdna_start
-  #
-  my $cdna_start = $GF{$allele}{"Exon 2"}{cdna_start};
-  my $pos1_mature= $PM{$loc};
+  if (!$exon3 || ! defined $GF{$allele}{"Exon 1"}{nuc}) { 
+    #
+    # figure out how much to left pad with asterisks based on cdna_start
+    #
+    my $cdna_start = $GF{$allele}{"Exon 2"}{cdna_start};
+    my $pos1_mature= $PM{$loc};
 
-  # this line is tricky
-  # from cDNA start, substract the cDNA position of the codon 1 
-  # then add rf this is the postion of the first codon, in frame
-  # subtract 1 to get the offset (number of unspecified AA)
-  my $offset = int ((($cdna_start+$rf)-$pos1_mature)/3)-1;
+    # this line is tricky
+    # from cDNA start, substract the cDNA position of the codon 1 
+    # then add rf this is the postion of the first codon, in frame
+    # subtract 1 to get the offset (number of unspecified AA)
+    my $offset = int ((($cdna_start+$rf)-$pos1_mature)/3)-1;
 
-  if ($loc=~/HLA-[ABC]/) {
-    $offset = int ((($cdna_start)-$pos1_mature)/3)-1;
-  }
-  print STDERR "$loc offset $offset\n";
-
-  # fill in with this many asterisks
-  my $prefix = "*" x $offset;
-
-  $aaseq = $prefix . $aaseq;
+    if ($loc=~/HLA-[ABC]/) {
+      $offset = int ((($cdna_start)-$pos1_mature)/3)-1;
+    }
+    print STDERR "$loc offset $offset\n";
+  
+    # fill in with this many asterisks
+    my $prefix = "*" x $offset;
+  
+    $aaseq = $prefix . $aaseq;
+  } 
 
   # get the short name: DPB1*02:01 (from DPB1*02:01:01:01)
   my $allele2 = getallele2($allele);
-
-
   # store the result
   $O{$loc}{$allele2} = $aaseq;
 }
@@ -134,7 +158,11 @@ foreach my $allele (sort keys %GF) {
 # print out
 #
 foreach my $loc (sort keys %O) {
-  open LOCDB, ">$datadir/$loc.db" or die "$!: $loc.db";
+  if ($exon3) {
+    open LOCDB, ">$datadir.exon3/$loc.db" or die "$!: $loc.db";
+  } else {
+    open LOCDB, ">$datadir/$loc.db" or die "$!: $loc.db";
+  }
   foreach my $allele (sort keys %{$O{$loc}}) {
     my ($loc, $a) = split /\*/, $allele;
     my $shortloc = (split /\-/, $loc)[1];

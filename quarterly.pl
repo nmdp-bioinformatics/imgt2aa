@@ -23,8 +23,12 @@ use Getopt::Std;
 my $datadir = "data";
 my $hladb = "3.56.0";
 my %options;
-getopts("v:", \%options);
+getopts("v:e", \%options);
 $hladb = $options{v} if defined $options{v} && $options{v};
+
+$hladb = "$hladb.exon3" if $options{e};
+mkdir $datadir unless -e $datadir;
+mkdir "$datadir/$hladb" unless -e "$datadir/$hladb";
 
 `cd "$datadir/$hladb"; perl ../../mksapTranslate ; perl ../../mkkir`;
 

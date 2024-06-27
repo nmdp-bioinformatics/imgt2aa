@@ -37,9 +37,17 @@ my @properties = ("charge", "size", "polarity");
 my $init_struct = 0;
 my $init_properties = 0;
 my $hladb = "3.56.0";
-my $sapdir = "$ENV{'HOME'}/src/git/imgt2aa/data/$hladb/";
+my $exon3 = 0;
+my $sapdir = "$ENV{'HOME'}/src/git/imgt2aa/data/";
 my @loci = qw/HLA-A HLA-B HLA-C HLA-DRB1 HLA-DQB1 HLA-DPB1/;
 
+
+sub set_exon3 {
+  $exon3 = shift;
+}
+sub set_hladb {
+  $hladb = shift;
+}
 
 ##############################################################################
 # function: feat
@@ -318,7 +326,12 @@ sub PIC {
 sub loadSAP {
   my $include_loc = shift;
   foreach my $loc (@loci) {
-    my $file = "$sapdir/$loc.sap";
+    my $file;
+    if ($exon3) {
+      $file = "$sapdir/$hladb.exon3/$loc.sap";
+    } else {
+      $file = "$sapdir/$hladb/$loc.sap";
+    } 
     open FILE, $file or die "$0: $file $! \n";
     while(<FILE>) {
       chomp;

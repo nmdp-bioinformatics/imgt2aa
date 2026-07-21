@@ -2,6 +2,8 @@
 
 {
    "epregistry" : "/Users/mmaiers/src/git/epregistry/data",
-   "rando" : 10
+   "rando" : 10,
+   "hladb" : "3.56.0",
+   "exon3" : 1
 }
 

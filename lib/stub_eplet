@@ -16,8 +16,8 @@ my $config = "./eplet.conf.json";
 print STDERR "start init\n";
 EPLET::initialize($config);
 print STDERR "end init\n";
-my $donor = "A*02:01";
-my $recip = "A*32:01";
+my $donor = "A*02:01+A*03:01";
+my $recip = "A*32:01+A*74:01";
 
 my @donor_eplets = EPLET::get($donor);
 my @recip_eplets = EPLET::get($recip);

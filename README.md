@@ -19,6 +19,12 @@ Note the database version (e.g. 3.56.0).
 $ perl imgt2aa.pl  -v 3.56.0
 ```
 
+Or run the full workflow:
+
+```bash
+$ ./run-quarterly.sh -v 3.65.0
+```
+
 
 Generates output files:
 ```
@@ -43,6 +49,14 @@ Run this to create the .sap and KIR files.
 
 ```
 ./quarterly.pl -v 3.56.0
+```
+
+The driver script supports common cases:
+
+```bash
+./run-quarterly.sh -v 3.65.0
+./run-quarterly.sh -v 3.65.0 -e
+./run-quarterly.sh -v 3.65.0 --skip-download
 ```
 
 # How it works

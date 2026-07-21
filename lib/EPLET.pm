@@ -23,9 +23,14 @@ sub initialize  {
   my $config_file  = shift;
   my $config = Config::JSON->new($config_file);
 
-  SAP::loadSAP();
   my $epregistry= $config->get("epregistry");
+  my $hladb= $config->get("hladb");
+  my $exon3= $config->get("exon3");
   my @epsets = qw/ABC DP DQ DRB/;
+
+  SAP::set_hladb($hladb);
+  SAP::set_exon3($exon3);
+  SAP::loadSAP();
 
   foreach my $epset (@epsets) {
     my $file = "$epregistry/HLA-$epset.csv";
@@ -69,23 +74,27 @@ sub getsubfeat {
 }
 sub get {
   die "initialize first" unless $init;
+  my (@alleles);
+  foreach my $allele (split /\+/, shift) {
+    push @alleles, get_who($allele);
+  }
 
   # put allele into WHO format
-  my $allele = get_who(shift);
-  my $loc = (split /\*/, $allele)[0];
+  my $loc = (split /\*/, $alleles[0])[0];
   my $epset = get_epset($loc);
   if (!defined $epset) {
     die "no eplets for loc $loc";
   }
 
-
-  my @ret=();
+  my %ret=();
   foreach my $id (keys %{$E{$epset}}) {
-    if (SAP::hasSubFeat($allele, $E{$epset}{$id}{"subfeat"})) {
-      push @ret, $E{$epset}{$id}{"name"};
+    foreach my $allele (@alleles) {
+      if (SAP::hasSubFeat($allele, $E{$epset}{$id}{"subfeat"})) {
+        $ret{$E{$epset}{$id}{"name"}}++;
+      }
     }
   }
-  return sort epsort @ret;
+  return sort epsort keys %ret;
 }
 
 

@@ -8,13 +8,15 @@
 package Translate;
 use strict;    # always
 use warnings;  # or else
+use File::Basename qw(dirname);
+use Cwd qw(abs_path);
 
 my $init=0;
 my %tran;
 
 sub initialize {
   $init=1;
-  my $translate_dir = ".";
+  my $translate_dir = dirname(abs_path(__FILE__));
   my $prot="$translate_dir/protein.db";
 
   open(PROTEIN, $prot) or die "can't open $prot for reading";

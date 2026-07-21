@@ -8,54 +8,80 @@
 ##############################################################################
 use strict;    # always
 use warnings;  # or else
-use XML::Simple;
-use lib ".";
+use XML::Twig;
+use FindBin qw($Bin);
+use Cwd qw(abs_path);
+use lib $Bin;
 use Translate;  # every Bioinformatician has written one
 use Getopt::Std;
 
+my $rootdir = abs_path($Bin);
 my $verbose =1;
-my $hladb="3.56.0";
+my $hladb="3.65.0";
 my %options;
-getopts("v:", \%options);
+getopts("ev:", \%options);
 $hladb = $options{v} if defined $options{v} && $options{v};
-my $datadir="./data/$hladb";
+my $datadir="$rootdir/data/$hladb";
 `mkdir -p $datadir`;
 
+my $exon3 = $options{e};
 # 
 # download latest hla.xml 
 # $ curl ftp://ftp.ebi.ac.uk/pub/databases/ipd/imgt/hla/xml/hla.xml.zip >hla.xml.zip
 # $ unzip hla.xml.zip
 #
-my $file = `cat hla.xml`;
+my %GF;  # Gene Feature
+my $allele_count = 0;
+my $progress_interval = 1000;
 
 print STDERR "parsing..." if $verbose;
-my $alleles = XMLin($file);
-print STDERR "done\n" if $verbose;
+my $twig = XML::Twig->new(
+  twig_handlers => {
+    allele => sub {
+      my ($twig, $allele_elt) = @_;
+      my $allele = $allele_elt->att('name');
+      my $sequence_elt = $allele_elt->first_child('sequence');
+      if (!$allele || !$sequence_elt) {
+        $allele_elt->purge;
+        return;
+      }
+      my $nucsequence = $sequence_elt->first_child_text('nucsequence') // "";
+      if (!$nucsequence) {
+        $allele_elt->purge;
+        return;
+      }
 
-my %GF;  # Gene Feature
+      $allele_count++;
+      if ($verbose && $allele_count % $progress_interval == 0) {
+        print STDERR "\rparsed $allele_count alleles...";
+      }
+      foreach my $feature_elt ($sequence_elt->children('feature')) {
+        my $feature = $feature_elt->att('name') // "";
+        next unless $feature =~ /(Exon|Intron|UTR)/;
 
-print STDERR "number of alleles: ", scalar keys %{$alleles->{"allele"}}, "\n";
-foreach my $allele (keys %{$alleles->{"allele"}}) {
-  # $allele='HLA-A*01:01:08'
-  my $a = $alleles->{allele}->{$allele};
-  my $s = $a->{sequence};
-  my $nucsequence= $s->{nucsequence};
-  foreach my $feature (keys %{$s->{feature}}) {
-    next unless $feature =~/(Exon|Intron|UTR)/;
-    # gDNA
-    my $start = $s->{feature}->{$feature}->{SequenceCoordinates}->{start};
-    my $end = $s->{feature}->{$feature}->{SequenceCoordinates}->{end};
-    # cDNA
-    my $rf = $s->{feature}->{$feature}->{cDNACoordinates}->{readingframe};
-    my $cdna_start = $s->{feature}->{$feature}->{cDNACoordinates}->{start};
-    my $cdna_end = $s->{feature}->{$feature}->{cDNACoordinates}->{end};
-    # sequence of this feature
-    my $nseq = substr($nucsequence, $start-1, $end-$start+1);
-    $GF{$allele}{$feature}{nuc} = $nseq;
-    $GF{$allele}{$feature}{rf}  = $rf;
-    $GF{$allele}{$feature}{cdna_start}  = $cdna_start;
-  }
-}
+        my $seq_coords = $feature_elt->first_child('SequenceCoordinates');
+        next unless $seq_coords;
+        my $start = $seq_coords->att('start');
+        my $end = $seq_coords->att('end');
+        next unless defined $start && defined $end;
+
+        my $cdna_coords = $feature_elt->first_child('cDNACoordinates');
+        my $rf = defined $cdna_coords ? $cdna_coords->att('readingframe') : undef;
+        my $cdna_start = defined $cdna_coords ? $cdna_coords->att('start') : undef;
+
+        my $nseq = substr($nucsequence, $start - 1, $end - $start + 1);
+        $GF{$allele}{$feature}{nuc} = $nseq;
+        $GF{$allele}{$feature}{rf} = $rf if defined $rf;
+        $GF{$allele}{$feature}{cdna_start} = $cdna_start if defined $cdna_start;
+      }
+
+      $allele_elt->purge;
+    },
+  },
+);
+$twig->parsefile("$rootdir/hla.xml");
+print STDERR "\rparsed $allele_count alleles...done\n" if $verbose;
+print STDERR "number of alleles: $allele_count\n";
 
 #
 # cDNA position corresponding to codon 1 in the mature protein
@@ -78,54 +104,81 @@ foreach my $allele (sort keys %GF) {
   my $nuc = "";
   foreach my $feature (sort keys %{$GF{$allele}}) {
     if ($loc=~/HLA-D/) {
-      next unless $feature=~/Exon 2/;
+      if ($exon3) {
+        next unless $feature=~/Exon [1234]/;
+      } else {
+        next unless $feature=~/Exon [2]/;
+      }
     } else {
-      next unless $feature=~/Exon [23]/;
+      if ($exon3) {
+        next unless $feature=~/Exon [234]/;
+      } else {
+        next unless $feature=~/Exon [23]/;
+      }
     }
-    $nuc .= $GF{$allele}{$feature}{nuc};
+    if ($feature eq "Exon 1" && $exon3) {
+      if ($loc=~/HLA-D[RQ]B[1345]/) {  
+        $nuc .= substr($GF{$allele}{$feature}{nuc}, -13);
+      }
+    } else {
+      $nuc .= $GF{$allele}{$feature}{nuc};
+    }
   }
-  my $rf = $GF{$allele}{"Exon 2"}{rf};
 
-  my $exon1 = defined $GF{$allele}{"Exon 1"}{nuc} ?  $GF{$allele}{"Exon 1"}{nuc} : "*";
-  my $exon4 = defined $GF{$allele}{"Exon 4"}{nuc} ?  $GF{$allele}{"Exon 4"}{nuc} : "**";
+  my $rf = $GF{$allele}{"Exon 2"}{rf};
 
   # readingframe = "3" means this G|AG
 
   my $aaseq;
   if ($loc=~/HLA-[ABC]/) {
+    my $exon1 = defined $GF{$allele}{"Exon 1"}{nuc} ?  $GF{$allele}{"Exon 1"}{nuc} : "*";
+    my $exon4 = defined $GF{$allele}{"Exon 4"}{nuc} ?  $GF{$allele}{"Exon 4"}{nuc} : "**";
     $nuc= substr($exon1, -1, 1) . $nuc . substr($exon4, 0, 2);
     $aaseq = TranslateRF($nuc, 1);
   } else {
-    $aaseq = TranslateRF($nuc, $rf);
+    # class II
+    if ($exon3) {
+      if (defined $GF{$allele}{"Exon 1"}{nuc}) {
+        $aaseq = TranslateRF($nuc, 1);
+      } else {
+        $aaseq = TranslateRF($nuc, $rf);
+      }
+    } else {
+      $aaseq = TranslateRF($nuc, $rf);
+    }
   }
 
 
-  #
-  # figure out how much to left pad with asterisks based on cdna_start
-  #
-  my $cdna_start = $GF{$allele}{"Exon 2"}{cdna_start};
-  my $pos1_mature= $PM{$loc};
+  if (!$exon3 || ! defined $GF{$allele}{"Exon 1"}{nuc}) { 
+    #
+    # figure out how much to left pad with asterisks based on cdna_start
+    #
+    my $cdna_start = $GF{$allele}{"Exon 2"}{cdna_start};
+    my $pos1_mature= $PM{$loc};
 
-  # this line is tricky
-  # from cDNA start, substract the cDNA position of the codon 1 
-  # then add rf this is the postion of the first codon, in frame
-  # subtract 1 to get the offset (number of unspecified AA)
-  my $offset = int ((($cdna_start+$rf)-$pos1_mature)/3)-1;
+    # this line is tricky
+    # from cDNA start, substract the cDNA position of the codon 1 
+    # then add rf this is the postion of the first codon, in frame
+    # subtract 1 to get the offset (number of unspecified AA)
+    my $offset = int ((($cdna_start+$rf)-$pos1_mature)/3)-1;
 
-  if ($loc=~/HLA-[ABC]/) {
-    $offset = int ((($cdna_start)-$pos1_mature)/3)-1;
-  }
-  print STDERR "$loc offset $offset\n";
-
-  # fill in with this many asterisks
-  my $prefix = "*" x $offset;
-
-  $aaseq = $prefix . $aaseq;
+    if ($loc=~/HLA-[ABC]/) {
+      $offset = int ((($cdna_start)-$pos1_mature)/3)-1;
+    }
+    if ($offset < 0) {
+      print STDERR "$allele has negative offset $offset; clamping to 0\n" if $verbose > 1;
+      $offset = 0;
+    }
+    print STDERR "$loc offset $offset\n" if $verbose > 1;
+  
+    # fill in with this many asterisks
+    my $prefix = "*" x $offset;
+  
+    $aaseq = $prefix . $aaseq;
+  } 
 
   # get the short name: DPB1*02:01 (from DPB1*02:01:01:01)
   my $allele2 = getallele2($allele);
-
-
   # store the result
   $O{$loc}{$allele2} = $aaseq;
 }
@@ -134,7 +187,11 @@ foreach my $allele (sort keys %GF) {
 # print out
 #
 foreach my $loc (sort keys %O) {
-  open LOCDB, ">$datadir/$loc.db" or die "$!: $loc.db";
+  if ($exon3) {
+    open LOCDB, ">$datadir.exon3/$loc.db" or die "$!: $loc.db";
+  } else {
+    open LOCDB, ">$datadir/$loc.db" or die "$!: $loc.db";
+  }
   foreach my $allele (sort keys %{$O{$loc}}) {
     my ($loc, $a) = split /\*/, $allele;
     my $shortloc = (split /\-/, $loc)[1];

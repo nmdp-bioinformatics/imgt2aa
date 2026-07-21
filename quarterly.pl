@@ -19,8 +19,11 @@
 use strict;    # always
 use warnings;  # or else
 use Getopt::Std;
+use FindBin qw($Bin);
+use Cwd qw(abs_path);
 
-my $datadir = "data";
+my $rootdir = abs_path($Bin);
+my $datadir = "$rootdir/data";
 my $hladb = "3.56.0";
 my %options;
 getopts("v:e", \%options);
@@ -30,7 +33,8 @@ $hladb = "$hladb.exon3" if $options{e};
 mkdir $datadir unless -e $datadir;
 mkdir "$datadir/$hladb" unless -e "$datadir/$hladb";
 
-`cd "$datadir/$hladb"; perl ../../mksapTranslate ; perl ../../mkkir`;
+chdir "$datadir/$hladb" or die "can't chdir to $datadir/$hladb: $!";
+system("perl", "$rootdir/mksapTranslate") == 0 or die "mksapTranslate failed: $?";
+system("perl", "$rootdir/mkkir") == 0 or die "mkkir failed: $?";
 
 exit 0;
-
